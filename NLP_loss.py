@@ -163,7 +163,6 @@ plt.show()
 #%%
 def NLP_transform(im):
     N_levels = 6
-    #Define DN_dom with the right size
     DN_dom = []
     # define laplacian_pyramid_s
     Lap_dom = laplacian_pyramid_s(im,N_levels)

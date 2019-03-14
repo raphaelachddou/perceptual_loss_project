@@ -26,7 +26,7 @@ from scipy.signal import convolve2d
 from scipy.misc import imread
 
 import tensorflow as tf
-from keras.layers import Lambda, Input
+from keras.layers import Lambda, Input,Add,Subtract
 from keras.models import Model
 
 #%%
@@ -42,12 +42,15 @@ class Laplacian_pyramid:
     def __init__(self,img_shape,N_levels):
         f = np.array([0.05,0.25, 0.4, 0.25, 0.05])
         self.filter = np.expand_dims(np.expand_dims(np.array([np.outer(f,f)]),axis=-1),axis=-1)
+        self.DN_filters = np.expand_dims(np.expand_dims(DN_filters,axis=-1),axis=-1)
         self.img_rows = img_shape[0]
         self.img_cols = img_shape[1]
+        self.sigmas = np.array([0.0248,0.0185, 0.0179,0.0191,0.0220, 0.2782])
         self.model = self.build_model(N_levels)
-         
+        
    
     def build_model(self,N_levels):
+        #pyr = K.variable(np.array([]),dtype='float64')
         pyr = list()
         input_img = Input(shape=(self.img_rows,self.img_cols,1))
         res = input_img
@@ -60,24 +63,53 @@ class Laplacian_pyramid:
             res = Conv2D(1,5,padding='same',use_bias=False)(res)
             res = Cropping2D(cropping=((0,odd1+2),(0,odd2+2)))(res)
             pyr.append(res)
-    
-        model = Model(inputs=input_img,outputs=pyr)
+            
+        pyr_new = list()
+        new = Subtract()([input_img,pyr[0]])
+        pyr_new.append(new)
+        for k in range(1,len(pyr)):
+            new = Subtract()([pyr[k-1],pyr[k]])
+            pyr_new.append(new)
+            
+        DN_dom = list()
+        for i in range(N_levels):
+            #utiliser conv2 de numpy ou bien de Keras ca c'est ok normalement
+            abs_pyr = Lambda(lambda t : K.abs(t) )(pyr_new[i])
+            A2 = Conv2D(1,5,padding='same',use_bias=True)(abs_pyr)
+            res = Lambda(lambda inputs: tf.divide(inputs[0],inputs[1]))([pyr_new[i],A2])
+            DN_dom.append(res)
+        output = Concatenate()([pyr_new, DN_dom])
+        model = Model(inputs=input_img,outputs=output)
+        model.summary()
+#        l = []
+#        for i in range(2*N_levels):
+#            l.append(self.filter)
+#        for i in range(N_levels):
+#            l.append([self.DN_filters[i],np.array(self.sigmas[i])])   
+#
+#        model.set_weights(l)
         for i in range(N_levels):
             model.layers[5*i + 1].set_weights(self.filter)
             model.layers[5*i + 4].set_weights(self.filter)
+            model.layers[43+i].set_weights([self.DN_filters[i],np.array([self.sigmas[i]])])
+            
+       
         return model
     
-    def transform(self,img):
-        pyr = self.model.predict(np.expand_dims(np.expand_dims(img,axis=-1),axis=0))
-        pyr_new = [img - pyr[0][0,:,:,0]]
-        for k in range(1,len(pyr)):
-            pyr_new.append(pyr[k-1][0,:,:,0]-pyr[k][0,:,:,0])
-        return pyr_new
+#    def transform(self,img):
+#        pyr = self.model.predict(np.expand_dims(np.expand_dims(img,axis=-1),axis=0))
+#        pyr_new = [img - pyr[0][0,:,:,0]]
+#        for k in range(1,len(pyr)):
+#            pyr_new.append(pyr[k-1][0,:,:,0]-pyr[k][0,:,:,0])
+#        return pyr_new
             
 #%%
 Lap_pyr = Laplacian_pyramid(img.shape,6)
 #%%
+from time import time
+t1 = time()
 pyr = Lap_pyr.transform(img)
+print(time()-t1)
 #%%
 plt.imshow(pyr[0],'Greys')
 plt.show()
@@ -92,4 +124,51 @@ plt.show()
 plt.imshow(pyr[5],'Greys')
 plt.show()   
 #%%
-
+DN_filters = []
+DN_filters.append(np.array([[0,0,0,0,0],
+                            [0,0,0.1011,0,0],
+                            [0,0.1493,0,0.1460,0.0072],
+                            [0,0,0.1015,0,0],
+                            [0,0,0,0,0]]))
+DN_filters.append(np.array([[0,0,0,0,0],
+                            [0,0,0.0757,0,0],
+                            [0,0.1986,0,0.1846,0],
+                            [0,0,0.0837,0,0],
+                            [0,0,0,0,0]]))
+DN_filters.append(np.array([[0,0,0,0,0],
+                            [0,0,0.0477,0,0],
+                            [0,0.2138,0,0.2243,0],
+                            [0,0,0.0467,0,0],
+                            [0,0,0,0,0]]))
+DN_filters.append(np.array([[0,0,0,0,0],
+                            [0,0,0,0,0],
+                            [0,0.2503,0,0.2616,0],
+                            [0,0,0,0,0],
+                            [0,0,0,0,0]]))
+DN_filters.append(np.array([[0,0,0,0,0],
+                            [0,0,0,0,0],
+                            [0,0.2598,0,0.2552,0],
+                            [0,0,0,0,0],
+                            [0,0,0,0,0]]))
+DN_filters.append(np.array([[0,0,0,0,0],
+                            [0,0,0,0,0],
+                            [0,0.2215,0,0.0717,0],
+                            [0,0,0,0,0],
+                            [0,0,0,0,0]]))
+DN_filters = np.array(DN_filters)
+class NlP_distance :
+    def __init__(self,img_shape,N_levels):
+        self.N_levels = N_levels
+        self.img_rows = img_shape[0]
+        self.img_cols = img_shape[1]
+        self.pyr = Laplacian_pyramid(self.img_shape,self.N_levels)
+        self.DN_filters = DN_filters
+        self.model = self.build_model(N_levels)
+        
+    def build_model(self,N_levels):
+        input_img = Input(shape=(self.img_rows,self.img_cols,1))
+        
+        
+        return()
+        
+        
