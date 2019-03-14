@@ -28,6 +28,39 @@ from scipy.misc import imread
 import tensorflow as tf
 from keras.layers import Lambda, Input,Add,Subtract
 from keras.models import Model
+#%%
+DN_filters = []
+DN_filters.append(np.array([[0,0,0,0,0],
+                            [0,0,0.1011,0,0],
+                            [0,0.1493,0,0.1460,0.0072],
+                            [0,0,0.1015,0,0],
+                            [0,0,0,0,0]]))
+DN_filters.append(np.array([[0,0,0,0,0],
+                            [0,0,0.0757,0,0],
+                            [0,0.1986,0,0.1846,0],
+                            [0,0,0.0837,0,0],
+                            [0,0,0,0,0]]))
+DN_filters.append(np.array([[0,0,0,0,0],
+                            [0,0,0.0477,0,0],
+                            [0,0.2138,0,0.2243,0],
+                            [0,0,0.0467,0,0],
+                            [0,0,0,0,0]]))
+DN_filters.append(np.array([[0,0,0,0,0],
+                            [0,0,0,0,0],
+                            [0,0.2503,0,0.2616,0],
+                            [0,0,0,0,0],
+                            [0,0,0,0,0]]))
+DN_filters.append(np.array([[0,0,0,0,0],
+                            [0,0,0,0,0],
+                            [0,0.2598,0,0.2552,0],
+                            [0,0,0,0,0],
+                            [0,0,0,0,0]]))
+DN_filters.append(np.array([[0,0,0,0,0],
+                            [0,0,0,0,0],
+                            [0,0.2215,0,0.0717,0],
+                            [0,0,0,0,0],
+                            [0,0,0,0,0]]))
+DN_filters = np.array(DN_filters)
 
 #%%
 img = imread('test.jpg','L')
@@ -123,52 +156,6 @@ plt.imshow(pyr[4],'Greys')
 plt.show()
 plt.imshow(pyr[5],'Greys')
 plt.show()   
-#%%
-DN_filters = []
-DN_filters.append(np.array([[0,0,0,0,0],
-                            [0,0,0.1011,0,0],
-                            [0,0.1493,0,0.1460,0.0072],
-                            [0,0,0.1015,0,0],
-                            [0,0,0,0,0]]))
-DN_filters.append(np.array([[0,0,0,0,0],
-                            [0,0,0.0757,0,0],
-                            [0,0.1986,0,0.1846,0],
-                            [0,0,0.0837,0,0],
-                            [0,0,0,0,0]]))
-DN_filters.append(np.array([[0,0,0,0,0],
-                            [0,0,0.0477,0,0],
-                            [0,0.2138,0,0.2243,0],
-                            [0,0,0.0467,0,0],
-                            [0,0,0,0,0]]))
-DN_filters.append(np.array([[0,0,0,0,0],
-                            [0,0,0,0,0],
-                            [0,0.2503,0,0.2616,0],
-                            [0,0,0,0,0],
-                            [0,0,0,0,0]]))
-DN_filters.append(np.array([[0,0,0,0,0],
-                            [0,0,0,0,0],
-                            [0,0.2598,0,0.2552,0],
-                            [0,0,0,0,0],
-                            [0,0,0,0,0]]))
-DN_filters.append(np.array([[0,0,0,0,0],
-                            [0,0,0,0,0],
-                            [0,0.2215,0,0.0717,0],
-                            [0,0,0,0,0],
-                            [0,0,0,0,0]]))
-DN_filters = np.array(DN_filters)
-class NlP_distance :
-    def __init__(self,img_shape,N_levels):
-        self.N_levels = N_levels
-        self.img_rows = img_shape[0]
-        self.img_cols = img_shape[1]
-        self.pyr = Laplacian_pyramid(self.img_shape,self.N_levels)
-        self.DN_filters = DN_filters
-        self.model = self.build_model(N_levels)
-        
-    def build_model(self,N_levels):
-        input_img = Input(shape=(self.img_rows,self.img_cols,1))
-        
-        
-        return()
-        
+
+
         
