@@ -111,8 +111,10 @@ class Laplacian_pyramid:
             A2 = Conv2D(1,5,padding='same',use_bias=True)(abs_pyr)
             res = Lambda(lambda inputs: tf.divide(inputs[0],inputs[1]))([pyr_new[i],A2])
             DN_dom.append(res)
-        output = Concatenate()([pyr_new, DN_dom])
-        model = Model(inputs=input_img,outputs=output)
+        #pyr_new = Lambda(lambda x: K.stack(x))(pyr_new)
+        #DN_dom= Lambda(lambda x: K.stack(x))(DN_dom)
+        #output = Lambda(lambda x: K.stack(x))([pyr_new, DN_dom])
+        model = Model(inputs=input_img,outputs=DN_dom)
         model.summary()
 #        l = []
 #        for i in range(2*N_levels):
@@ -128,7 +130,7 @@ class Laplacian_pyramid:
             
        
         return model
-    
+   
 #    def transform(self,img):
 #        pyr = self.model.predict(np.expand_dims(np.expand_dims(img,axis=-1),axis=0))
 #        pyr_new = [img - pyr[0][0,:,:,0]]
@@ -138,6 +140,7 @@ class Laplacian_pyramid:
             
 #%%
 Lap_pyr = Laplacian_pyramid(img.shape,6)
+
 #%%
 from time import time
 t1 = time()
