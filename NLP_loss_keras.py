@@ -64,6 +64,9 @@ DN_filters = np.array(DN_filters)
 
 #%%
 img = imread('test.jpg','L')
+#img = np.expand_dims(np.expand_dims(img,axis=0),axis=-1)
+
+
 
 def duplicate_last_row(tensor):
     return tf.concat((tensor, tf.expand_dims(tensor[:, -1, ...], 1)), axis=1)
@@ -80,8 +83,9 @@ class Laplacian_pyramid:
         self.img_cols = img_shape[1]
         self.sigmas = np.array([0.0248,0.0185, 0.0179,0.0191,0.0220, 0.2782])
         self.model = self.build_model(N_levels)
-        
-   
+        self.N_levels = N_levels
+
+
     def build_model(self,N_levels):
         #pyr = K.variable(np.array([]),dtype='float64')
         pyr = list()
@@ -96,14 +100,14 @@ class Laplacian_pyramid:
             res = Conv2D(1,5,padding='same',use_bias=False)(res)
             res = Cropping2D(cropping=((0,odd1+2),(0,odd2+2)))(res)
             pyr.append(res)
-            
+
         pyr_new = list()
         new = Subtract()([input_img,pyr[0]])
         pyr_new.append(new)
         for k in range(1,len(pyr)):
             new = Subtract()([pyr[k-1],pyr[k]])
             pyr_new.append(new)
-            
+
         DN_dom = list()
         for i in range(N_levels):
             #utiliser conv2 de numpy ou bien de Keras ca c'est ok normalement
@@ -120,20 +124,44 @@ class Laplacian_pyramid:
             model.layers[5*i + 1].set_weights(self.filter)
             model.layers[5*i + 4].set_weights(self.filter)
             model.layers[43+i].set_weights([self.DN_filters[i],np.array([self.sigmas[i]])])
-            
-       
+
+
         return model
-   
+
 #    def transform(self,img):
 #        pyr = self.model.predict(np.expand_dims(np.expand_dims(img,axis=-1),axis=0))
 #        pyr_new = [img - pyr[0][0,:,:,0]]
 #        for k in range(1,len(pyr)):
 #            pyr_new.append(pyr[k-1][0,:,:,0]-pyr[k][0,:,:,0])
 #        return pyr_new
-            
+
+    def distance(self,img1,img2):
+        Y_ori = self.model.predict(img1)[0,:,:,:,0]
+        Lap_ori = self.model.predict(img1)[0,:,:,:,1]
+        Y_dist = self.model.predict(img2)[0,:,:,:,0]
+        Lap_dist = self.model.predict(img2)[0,:,:,:,1]
+    #define RR_Lap_aux and RR_aux
+        RR_Lap_aux = []
+        RR_aux = []
+        for i in range(self.N_levels):
+        #utiliser les fonctions du backend keras sqrt et mean
+            RR_Lap_aux.append(K.sqrt(K.mean(K.square(Lap_ori[i]-Lap_dist[i]))))
+            RR_aux.append(K.sqrt(K.mean(K.square(Y_ori[i]-Y_dist[i]))))
+        RR_Lap_aux = K.stack(RR_Lap_aux)
+        RR_aux = K.stack(RR_aux)
+        DMOS_Lap = K.mean(RR_Lap_aux)
+        DMOS_Lap_dn2 = K.mean(RR_aux)
+
+        return(DMOS_Lap,DMOS_Lap_dn2)
 #%%
 Lap_pyr = Laplacian_pyramid(img.shape,6)
-
+#%%
+img = np.expand_dims(np.expand_dims(img,axis=0),axis=-1)
+#%%
+img_noisy = img + np.random.normal(scale = 2.0,size = img.shape)
+#%%
+pyr = Lap_pyr.model.predict(img)
+a, b = Lap_pyr.distance(img,img_noisy)
 #%%
 from time import time
 t1 = time()
@@ -151,7 +179,4 @@ plt.show()
 plt.imshow(pyr[4],'Greys')
 plt.show()
 plt.imshow(pyr[5],'Greys')
-plt.show()   
-
-
-        
+plt.show()
