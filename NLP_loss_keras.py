@@ -15,7 +15,7 @@ import copy
 import os
 
 from keras.datasets import mnist
-from keras.layers import Input,  ZeroPadding2D, Concatenate,MaxPooling2D, Cropping2D, UpSampling2D, AveragePooling2D
+from keras.layers import Input,  ZeroPadding2D, concatenate,MaxPooling2D, Cropping2D, UpSampling2D, AveragePooling2D
 from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.convolutional import UpSampling2D, Conv2D, Conv2DTranspose
 from keras.models import Sequential, Model, load_model
@@ -111,18 +111,11 @@ class Laplacian_pyramid:
             A2 = Conv2D(1,5,padding='same',use_bias=True)(abs_pyr)
             res = Lambda(lambda inputs: tf.divide(inputs[0],inputs[1]))([pyr_new[i],A2])
             DN_dom.append(res)
-        #pyr_new = Lambda(lambda x: K.stack(x))(pyr_new)
-        #DN_dom= Lambda(lambda x: K.stack(x))(DN_dom)
-        #output = Lambda(lambda x: K.stack(x))([pyr_new, DN_dom])
+        pyr_new = Lambda(lambda x: K.stack(x,axis = 1))(pyr_new)
+        DN_dom= Lambda(lambda x: K.stack(x,axis = 1))(DN_dom)
+        output = concatenate([pyr_new,DN_dom])
         model = Model(inputs=input_img,outputs=DN_dom)
         model.summary()
-#        l = []
-#        for i in range(2*N_levels):
-#            l.append(self.filter)
-#        for i in range(N_levels):
-#            l.append([self.DN_filters[i],np.array(self.sigmas[i])])   
-#
-#        model.set_weights(l)
         for i in range(N_levels):
             model.layers[5*i + 1].set_weights(self.filter)
             model.layers[5*i + 4].set_weights(self.filter)
@@ -144,7 +137,7 @@ Lap_pyr = Laplacian_pyramid(img.shape,6)
 #%%
 from time import time
 t1 = time()
-pyr = Lap_pyr.transform(img)
+pyr = Lap_pyr.model.predict(np.expand_dims(np.expand_dims(img,axis=-1),axis=0))
 print(time()-t1)
 #%%
 plt.imshow(pyr[0],'Greys')
