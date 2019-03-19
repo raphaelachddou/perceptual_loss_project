@@ -1,15 +1,7 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Mar 18 17:58:36 2019
 
-@author: raphael
-"""
-
-import numpy as np
-#import tensorflow as tf
 from keras.models import Model
-from keras.layers import  Input,Conv2D,BatchNormalization,Activation,Lambda,Subtract
+from keras.layers import  Input,Conv2D,BatchNormalization,Activation,Subtract
 #from keras import backend as K
 
 def DnCNN():
@@ -28,4 +20,4 @@ def DnCNN():
     x = Subtract()([inpt, x])   # input - noise
     model = Model(inputs=inpt, outputs=x)
     
-    return(model)
+    return model

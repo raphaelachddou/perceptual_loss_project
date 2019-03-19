@@ -1,0 +1,3 @@
+2019 18:48:43 main.py[line:47] INFO Namespace(batch_size=128, epoch=50, lr=0.001, model='DnCNN', only_test=False, pretrain=None, save_every=5, sigma=25, test_dir='./data/Test/Set68', train_data='./data/npy_data/clean_patches.npy')
+2019 18:48:43 main.py[line:55] INFO loading train data...
+2019 18:48:45 main.py[line:57] INFO Size of train data: (238400, 40, 40)

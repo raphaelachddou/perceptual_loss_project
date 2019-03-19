@@ -14,20 +14,14 @@ import pickle
 import copy
 import os
 
-from keras.datasets import mnist
-from keras.layers import Input,  ZeroPadding2D, concatenate,MaxPooling2D, Cropping2D, UpSampling2D, AveragePooling2D
-from keras.layers.advanced_activations import LeakyReLU
-from keras.layers.convolutional import UpSampling2D, Conv2D, Conv2DTranspose
+from keras.layers import Input,  ZeroPadding2D, concatenate,MaxPooling2D, Cropping2D, UpSampling2D, AveragePooling2D,Lambda,Add,Subtract
+from keras.layers.convolutional import Conv2D
 from keras.models import Sequential, Model, load_model
-from keras.optimizers import Adam
 from keras import backend as K
-from keras.utils import to_categorical
-from scipy.signal import convolve2d
+
 from scipy.misc import imread
 
 import tensorflow as tf
-from keras.layers import Lambda, Input,Add,Subtract
-from keras.models import Model
 #%%
 DN_filters = []
 DN_filters.append(np.array([[0,0,0,0,0],
@@ -64,6 +58,7 @@ DN_filters = np.array(DN_filters)
 
 #%%
 img = imread('test.jpg','L')
+#%%
 #img = np.expand_dims(np.expand_dims(img,axis=0),axis=-1)
 
 
@@ -118,7 +113,7 @@ class Laplacian_pyramid:
         pyr_new = Lambda(lambda x: K.stack(x,axis = 1))(pyr_new)
         DN_dom= Lambda(lambda x: K.stack(x,axis = 1))(DN_dom)
         output = concatenate([pyr_new,DN_dom])
-        model = Model(inputs=input_img,outputs=DN_dom)
+        model = Model(inputs=input_img,outputs=output)
         model.summary()
         for i in range(N_levels):
             model.layers[5*i + 1].set_weights(self.filter)
@@ -152,7 +147,7 @@ class Laplacian_pyramid:
         DMOS_Lap = K.mean(RR_Lap_aux)
         DMOS_Lap_dn2 = K.mean(RR_aux)
 
-        return(DMOS_Lap,DMOS_Lap_dn2)
+        return(DMOS_Lap)
 #%%
 Lap_pyr = Laplacian_pyramid(img.shape,6)
 #%%
@@ -161,11 +156,11 @@ img = np.expand_dims(np.expand_dims(img,axis=0),axis=-1)
 img_noisy = img + np.random.normal(scale = 2.0,size = img.shape)
 #%%
 pyr = Lap_pyr.model.predict(img)
-a, b = Lap_pyr.distance(img,img_noisy)
+a = Lap_pyr.distance(img,img_noisy)
 #%%
 from time import time
 t1 = time()
-pyr = Lap_pyr.model.predict(np.expand_dims(np.expand_dims(img,axis=-1),axis=0))
+pyr = Lap_pyr.model.predict(img)
 print(time()-t1)
 #%%
 plt.imshow(pyr[0],'Greys')
